@@ -1,0 +1,17 @@
+# Arquivos temporários do Excel (lock files)
+~$*.xlsx
+~$*.xls
+
+# Arquivos de cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos de ambiente
+.env
+*.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini

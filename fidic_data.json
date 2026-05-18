@@ -1,0 +1,208 @@
+{
+  "fidics": {
+    "KANASTRA": {
+      "valor": 227709149.31,
+      "desagio": 15333210.81,
+      "data_inicio": "25/04/2025",
+      "data_fim": "16/09/2026",
+      "volumetria": 9555,
+      "prazo_medio": 49,
+      "representatividade": 36.65,
+      "desagio_pct": 6.73
+    },
+    "DAYCOVAL": {
+      "valor": 75752136.74,
+      "desagio": 1835243.14,
+      "data_inicio": "04/09/2024",
+      "data_fim": "06/08/2026",
+      "volumetria": 3564,
+      "prazo_medio": 43,
+      "representatividade": 12.19,
+      "desagio_pct": 2.42
+    },
+    "ALL SEC": {
+      "valor": 52558667.05,
+      "desagio": 2408288.28,
+      "data_inicio": "04/12/2024",
+      "data_fim": "17/08/2026",
+      "volumetria": 2656,
+      "prazo_medio": 46,
+      "representatividade": 8.46,
+      "desagio_pct": 4.58
+    },
+    "SAFRA": {
+      "valor": 46078455.23,
+      "desagio": 1449337.57,
+      "data_inicio": "12/08/2024",
+      "data_fim": "03/08/2026",
+      "volumetria": 2585,
+      "prazo_medio": 41,
+      "representatividade": 7.42,
+      "desagio_pct": 3.15
+    },
+    "ARTICO": {
+      "valor": 42489001.9,
+      "desagio": 3005586.33,
+      "data_inicio": "17/06/2025",
+      "data_fim": "08/07/2026",
+      "volumetria": 1884,
+      "prazo_medio": 49,
+      "representatividade": 6.84,
+      "desagio_pct": 7.07
+    },
+    "ONE 7": {
+      "valor": 26207587.77,
+      "desagio": 1422811.28,
+      "data_inicio": "06/02/2025",
+      "data_fim": "30/07/2026",
+      "volumetria": 1007,
+      "prazo_medio": 51,
+      "representatividade": 4.22,
+      "desagio_pct": 5.43
+    },
+    "OPHIR": {
+      "valor": 25794150.06,
+      "desagio": 1547511.6,
+      "data_inicio": "26/06/2025",
+      "data_fim": "21/07/2026",
+      "volumetria": 753,
+      "prazo_medio": 59,
+      "representatividade": 4.15,
+      "desagio_pct": 6.0
+    },
+    "ASA": {
+      "valor": 22948520.84,
+      "desagio": 1459259.38,
+      "data_inicio": "27/06/2025",
+      "data_fim": "24/07/2026",
+      "volumetria": 1183,
+      "prazo_medio": 48,
+      "representatividade": 3.69,
+      "desagio_pct": 6.36
+    },
+    "YAALEH": {
+      "valor": 22273769.32,
+      "desagio": 1290759.99,
+      "data_inicio": "30/01/2025",
+      "data_fim": "11/08/2026",
+      "volumetria": 886,
+      "prazo_medio": 48,
+      "representatividade": 3.58,
+      "desagio_pct": 5.79
+    },
+    "RED ASSET": {
+      "valor": 18604082.68,
+      "desagio": 1517941.87,
+      "data_inicio": "31/07/2025",
+      "data_fim": "11/08/2026",
+      "volumetria": 1002,
+      "prazo_medio": 50,
+      "representatividade": 2.99,
+      "desagio_pct": 8.16
+    },
+    "JUMP": {
+      "valor": 15311032.19,
+      "desagio": 1295538.09,
+      "data_inicio": "13/05/2025",
+      "data_fim": "30/07/2026",
+      "volumetria": 745,
+      "prazo_medio": 47,
+      "representatividade": 2.46,
+      "desagio_pct": 8.46
+    },
+    "MULTIPLIKE": {
+      "valor": 15250464.24,
+      "desagio": 827880.71,
+      "data_inicio": "26/11/2024",
+      "data_fim": "29/06/2026",
+      "volumetria": 736,
+      "prazo_medio": 47,
+      "representatividade": 2.45,
+      "desagio_pct": 5.43
+    },
+    "KREDITON": {
+      "valor": 12227947.24,
+      "desagio": 758890.68,
+      "data_inicio": "21/10/2025",
+      "data_fim": "17/07/2026",
+      "volumetria": 332,
+      "prazo_medio": 57,
+      "representatividade": 1.97,
+      "desagio_pct": 6.21
+    },
+    "ASIA": {
+      "valor": 4247674.39,
+      "desagio": 378845.11,
+      "data_inicio": "25/11/2025",
+      "data_fim": "23/07/2026",
+      "volumetria": 214,
+      "prazo_medio": 48,
+      "representatividade": 0.68,
+      "desagio_pct": 8.92
+    },
+    "AUDAX": {
+      "valor": 4244478.17,
+      "desagio": 264536.24,
+      "data_inicio": "24/12/2024",
+      "data_fim": "09/10/2025",
+      "volumetria": 188,
+      "prazo_medio": 42,
+      "representatividade": 0.68,
+      "desagio_pct": 6.23
+    },
+    "SICOOB": {
+      "valor": 3681991.46,
+      "desagio": 145512.99,
+      "data_inicio": "31/07/2025",
+      "data_fim": "09/07/2026",
+      "volumetria": 69,
+      "prazo_medio": 66,
+      "representatividade": 0.59,
+      "desagio_pct": 3.95
+    },
+    "MANCHESTER": {
+      "valor": 3677181.6,
+      "desagio": 0.0,
+      "data_inicio": "31/10/2025",
+      "data_fim": "14/03/2026",
+      "volumetria": 43,
+      "prazo_medio": 88,
+      "representatividade": 0.59,
+      "desagio_pct": 0.0
+    },
+    "MAIN3": {
+      "valor": 1359956.68,
+      "desagio": 25952.79,
+      "data_inicio": "21/08/2025",
+      "data_fim": "25/12/2025",
+      "volumetria": 17,
+      "prazo_medio": 106,
+      "representatividade": 0.22,
+      "desagio_pct": 1.91
+    },
+    "CREDVALE": {
+      "valor": 824868.09,
+      "desagio": 38082.79,
+      "data_inicio": "02/12/2024",
+      "data_fim": "08/06/2025",
+      "volumetria": 45,
+      "prazo_medio": 31,
+      "representatividade": 0.13,
+      "desagio_pct": 4.62
+    },
+    "C6": {
+      "valor": 98521.95,
+      "desagio": 0.0,
+      "data_inicio": "10/04/2026",
+      "data_fim": "23/06/2026",
+      "volumetria": 3,
+      "prazo_medio": 69,
+      "representatividade": 0.02,
+      "desagio_pct": 0.0
+    }
+  },
+  "total": 621339636.91,
+  "total_desagio": 35005189.65,
+  "total_boletos": 27467,
+  "gerado_em": "16/05/2026 21:32"
+}
