@@ -75,7 +75,7 @@ for sk, display in SHEET_NAMES.items():
     rows = list(ws.iter_rows(values_only=True))
     hc = [str(h).strip().upper() if h else '' for h in rows[0]]
 
-    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h), None)
+    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h or h == 'NF'), None)
     par_idx  = next((i for i,h in enumerate(hc) if 'PARCELA' in h), None)
     val_idx  = next((i for i,h in enumerate(hc) if 'VALOR' in h and 'R$' in h), None)
     dat_idx  = next((i for i,h in enumerate(hc) if h == 'DATA'), None)
@@ -522,3 +522,102 @@ print(f'  Valor total:   R$ {tv:,.2f}')
 print(f'  Desagio total: R$ {td:,.2f}')
 print(f'  Pagos: {n_pg} | Nao pagos: {n_np} | Sem registro: {n_si}')
 print(f'  Abas: Resumo + Desagio + Detalhamento + {len(fidcs)} FIDCs')
+
+# ─── STEP 5: Gerar baixas_raw.js para o dashboard ─────────────────────────────
+import json as _json
+VENC_MIN = datetime(2025, 1, 1)
+
+cli_dict_js = {}
+cli_arr_js  = []
+records_js  = []
+months_set  = set()
+
+for sk, display in SHEET_NAMES.items():
+    if sk not in wb_src.sheetnames:
+        continue
+    ws2 = wb_src[sk]
+    rows2 = list(ws2.iter_rows(values_only=True))
+    hc2 = [str(h).strip().upper() if h else '' for h in rows2[0]]
+
+    nf2   = next((i for i,h in enumerate(hc2) if 'NOTA' in h or h == 'NF'), None)
+    par2  = next((i for i,h in enumerate(hc2) if 'PARCELA' in h), None)
+    val2  = next((i for i,h in enumerate(hc2) if 'VALOR' in h and 'R$' in h), None)
+    dat2  = next((i for i,h in enumerate(hc2) if h == 'DATA'), None)
+    vnc2  = next((i for i,h in enumerate(hc2) if 'VENCIMENTO' in h), None)
+    cli2  = next((i for i,h in enumerate(hc2) if 'CLIENTE' in h), None)
+    des2  = next((i for i,h in enumerate(hc2) if 'DESAGIO' in h), None)
+    drec2 = next((i for i,h in enumerate(hc2) if 'DATA' in h and ('RECOMPRA' in h or 'BAIXA' in h)), None)
+
+    if val2 is None or vnc2 is None:
+        continue
+
+    for row in rows2[1:]:
+        if not any(v is not None for v in row):
+            continue
+        venc = row[vnc2]
+        if not isinstance(venc, datetime) or venc < VENC_MIN:
+            continue
+        try:
+            v = float(row[val2]) if row[val2] is not None else 0.0
+        except:
+            v = 0.0
+        if v <= 0:
+            continue
+
+        try:
+            nf_r = str(row[nf2]).lstrip('0') if nf2 is not None and row[nf2] is not None else ''
+            pa_r = str(int(float(str(row[par2])))).zfill(3) if par2 is not None and row[par2] is not None else '001'
+            key2 = nf_r + pa_r
+        except:
+            nf_r, pa_r, key2 = '', '001', ''
+
+        info2 = csv_lkp.get(key2, {})
+        st2   = info2.get('status', 'Sem registro')
+        if st2 == 'Pago':
+            st_enc = 'P'
+        elif st2 and 'pago' in st2.lower() and st2.strip()[0].lower() == 'n':
+            st_enc = 'N'
+        else:
+            st_enc = 'S'
+
+        # Data pagamento
+        dr2 = row[drec2] if drec2 is not None and row[drec2] is not None else None
+        if isinstance(dr2, datetime):
+            dp_str = dr2.strftime('%Y-%m-%d')
+        elif info2.get('data_pag_est') and st2 == 'Pago':
+            dp_str = info2['data_pag_est'].strftime('%Y-%m-%d')
+        else:
+            dp_str = None
+
+        try:
+            des_v = float(row[des2]) if des2 is not None and row[des2] is not None else 0.0
+            if des_v >= v: des_v = 0.0
+        except:
+            des_v = 0.0
+
+        cess_str = row[dat2].strftime('%Y-%m-%d') if dat2 is not None and isinstance(row[dat2], datetime) else None
+        nf_js = int(nf_r) if nf_r.isdigit() else nf_r
+
+        cli_name = str(row[cli2]) if cli2 is not None and row[cli2] is not None else ''
+        if cli_name not in cli_dict_js:
+            cli_dict_js[cli_name] = len(cli_arr_js)
+            cli_arr_js.append(cli_name)
+
+        mes_str = venc.strftime('%Y-%m')
+        months_set.add(mes_str)
+        records_js.append([
+            display, cli_dict_js[cli_name], mes_str, venc.day,
+            cess_str, nf_js, int(pa_r),
+            round(v, 2), round(des_v, 2), st_enc, dp_str,
+        ])
+
+js_obj = {
+    'h': ['FIDC','Cli','MesVenc','DiaVenc','Cessao','NF','Parcela','Valor','Desagio','Status','DataPag'],
+    'd': records_js,
+    'c': cli_arr_js,
+    'm': sorted(months_set),
+}
+js_content = 'var BAIXAS_RAW=' + _json.dumps(js_obj, ensure_ascii=False, separators=(',', ':')) + ';'
+with open('baixas_raw.js', 'w', encoding='utf-8') as f:
+    f.write(js_content)
+print(f'\nbaixas_raw.js: {len(records_js):,} registros, {len(months_set)} meses')

@@ -62,7 +62,7 @@ for sk, display in SHEET_NAMES.items():
     rows = list(ws.iter_rows(values_only=True))
     hc = [str(h).strip().upper() if h else '' for h in rows[0]]
 
-    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h), None)
+    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h or h == 'NF'), None)
     par_idx  = next((i for i,h in enumerate(hc) if 'PARCELA' in h), None)
     val_idx  = next((i for i,h in enumerate(hc) if 'VALOR' in h and 'R$' in h), None)
     dat_idx  = next((i for i,h in enumerate(hc) if h == 'DATA'), None)

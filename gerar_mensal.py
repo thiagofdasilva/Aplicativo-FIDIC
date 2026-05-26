@@ -54,7 +54,7 @@ def process(ws, display_name):
     hc = [str(h).strip().upper() if h else '' for h in header]
 
     val_idx  = next((i for i,h in enumerate(hc) if 'VALOR' in h and 'R$' in h), None)
-    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h), None)
+    nf_idx   = next((i for i,h in enumerate(hc) if 'NOTA' in h or h == 'NF'), None)
     par_idx  = next((i for i,h in enumerate(hc) if 'PARCELA' in h), None)
     data_idx = next((i for i,h in enumerate(hc) if h == 'DATA'), None)
     venc_idx = next((i for i,h in enumerate(hc) if 'VENCIMENTO' in h), None)
