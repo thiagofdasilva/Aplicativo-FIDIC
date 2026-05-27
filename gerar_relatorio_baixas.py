@@ -188,6 +188,7 @@ cli_gi   = next((i for i,h in enumerate(hc_g) if 'CLIENTE' in h), None)
 cnpj_gi  = next((i for i,h in enumerate(hc_g) if 'CNPJ' in h), None)
 sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
 cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+des_gi   = next((i for i,h in enumerate(hc_g) if 'DES' in h and 'GIO' in h), None)
 
 n_reg_g = 0
 for row in rows_g[1:]:
@@ -199,6 +200,11 @@ for row in rows_g[1:]:
     try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
     except: v = 0.0
     if v <= 0: continue
+
+    try:
+        des_gv = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
+        if des_gv >= v: des_gv = 0.0
+    except: des_gv = 0.0
 
     sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
     status = 'Pago' if 'BAIXADO' in sit else 'Não pago'
@@ -226,8 +232,8 @@ for row in rows_g[1:]:
         'nf':           nf_int,
         'parcela':      int(par_raw),
         'valor':        round(v, 2),
-        'desagio':      0.0,
-        'val_liq':      round(v, 2),
+        'desagio':      round(des_gv, 2),
+        'val_liq':      round(v - des_gv, 2),
         'restante':     0.0,
         'dias_deb':     0,
         'status':       status,
@@ -693,6 +699,11 @@ for row in rows_g[1:]:
     except:
         nf_rg, pa_rg = '', '001'
 
+    try:
+        des_gjs = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
+        if des_gjs >= v: des_gjs = 0.0
+    except: des_gjs = 0.0
+
     cess_str_g = row[dat_gi].strftime('%Y-%m-%d') if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
     nf_js_g = int(nf_rg) if nf_rg.isdigit() else nf_rg
     cli_g2 = str(row[cli_gi]) if cli_gi is not None and row[cli_gi] is not None else ''
@@ -703,7 +714,7 @@ for row in rows_g[1:]:
     records_js.append([
         'GRAFENO', cli_dict_js[cli_g2], mes_str, venc.day,
         cess_str_g, nf_js_g, int(pa_rg),
-        round(v, 2), 0.0, st_enc, None,
+        round(v, 2), round(des_gjs, 2), st_enc, None,
     ])
 
 js_obj = {

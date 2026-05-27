@@ -149,15 +149,20 @@ val_gi  = next((i for i,h in enumerate(hc_g) if 'VALOR' in h and 'R$' in h), Non
 dat_gi  = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
 venc_gi = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
 cedido_gi = next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+des_gi  = next((i for i,h in enumerate(hc_g) if 'DES' in h and 'GIO' in h), None)
 
-g_valor = g_vol = 0; g_datas = []; g_vencs = []; g_prazos = []
+g_valor = g_desagio = g_vol = 0; g_datas = []; g_vencs = []; g_prazos = []
 for row in rows_g[1:]:
     if not any(v is not None for v in row): continue
     if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
     try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
     except: v = 0.0
     if v <= 0: continue
-    g_valor += v; g_vol += 1
+    try:
+        d_val = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
+        if d_val >= v: d_val = 0.0
+    except: d_val = 0.0
+    g_valor += v; g_desagio += d_val; g_vol += 1
     d = row[dat_gi]; vd = row[venc_gi]
     if isinstance(d, datetime): g_datas.append(d)
     if isinstance(vd, datetime): g_vencs.append(vd)
@@ -167,7 +172,7 @@ for row in rows_g[1:]:
 
 if g_valor > 0:
     results['GRAFENO'] = {
-        'valor': round(g_valor, 2), 'desagio': 0.0,
+        'valor': round(g_valor, 2), 'desagio': round(g_desagio, 2),
         'data_inicio': min(g_datas).strftime('%d/%m/%Y') if g_datas else 'N/A',
         'data_fim':    max(g_vencs).strftime('%d/%m/%Y') if g_vencs else 'N/A',
         'volumetria':  g_vol,

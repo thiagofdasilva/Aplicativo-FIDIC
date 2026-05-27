@@ -12,13 +12,13 @@
     },
     "GRAFENO": {
       "valor": 165868718.82,
-      "desagio": 0.0,
+      "desagio": 5086213.25,
       "data_inicio": "30/04/2024",
       "data_fim": "14/08/2026",
       "volumetria": 8210,
       "prazo_medio": 43,
       "representatividade": 21.07,
-      "desagio_pct": 0.0
+      "desagio_pct": 3.07
     },
     "DAYCOVAL": {
       "valor": 75752136.74,
@@ -212,7 +212,7 @@
     }
   },
   "total": 787208355.73,
-  "total_desagio": 35005189.65,
+  "total_desagio": 40091402.9,
   "total_boletos": 35677,
-  "gerado_em": "27/05/2026 16:23"
+  "gerado_em": "27/05/2026 16:37"
 }

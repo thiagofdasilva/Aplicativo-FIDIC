@@ -153,6 +153,7 @@ cli_gi   = next((i for i,h in enumerate(hc_g) if 'CLIENTE' in h), None)
 cnpj_gi  = next((i for i,h in enumerate(hc_g) if 'CNPJ' in h), None)
 sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
 cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+des_gi   = next((i for i,h in enumerate(hc_g) if 'DES' in h and 'GIO' in h), None)
 
 for row in rows_g[1:]:
     if not any(v is not None for v in row): continue
@@ -162,6 +163,11 @@ for row in rows_g[1:]:
     try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
     except: v = 0.0
     if v <= 0: continue
+
+    try:
+        des_gv = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
+        if des_gv >= v: des_gv = 0.0
+    except: des_gv = 0.0
 
     try:
         nf_raw = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
@@ -184,8 +190,8 @@ for row in rows_g[1:]:
         'nf':         int(nf_raw) if nf_raw.isdigit() else nf_raw,
         'parcela':    int(par_raw) if par_raw.isdigit() else 1,
         'valor':      v,
-        'desagio':    0.0,
-        'valor_liq':  round(v, 2),
+        'desagio':    round(des_gv, 2),
+        'valor_liq':  round(v - des_gv, 2),
         'restante':   v,
         'data_cess':  data_cess,
         'vencimento': vencimento,

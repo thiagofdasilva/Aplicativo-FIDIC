@@ -186,6 +186,7 @@ dat_gi   = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
 venc_gi  = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
 cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
 sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
+des_gi   = next((i for i,h in enumerate(hc_g) if 'DES' in h and 'GIO' in h), None)
 
 monthly_g = defaultdict(lambda: {
     'valor':0.0,'desagio':0.0,'volumetria':0,'prazos':[],
@@ -202,12 +203,17 @@ for row in rows_g[1:]:
     except: v = 0.0
     if v <= 0: continue
 
+    try:
+        des_g = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
+        if des_g >= v: des_g = 0.0
+    except: des_g = 0.0
+
     sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
     is_pago = 'BAIXADO' in sit
 
     ym = d.strftime('%Y-%m')
     m = monthly_g[ym]
-    m['valor'] += v; m['volumetria'] += 1
+    m['valor'] += v; m['desagio'] += des_g; m['volumetria'] += 1
     if venc_gi is not None and isinstance(row[venc_gi], datetime):
         p = (row[venc_gi] - d).days
         if 0 < p < 1000: m['prazos'].append(p)
@@ -220,7 +226,7 @@ result_g = {}
 for ym, data in sorted(monthly_g.items()):
     ps = data.pop('prazos')
     result_g[ym] = {
-        'valor': round(data['valor'],2), 'desagio': 0.0, 'volumetria': data['volumetria'],
+        'valor': round(data['valor'],2), 'desagio': round(data['desagio'],2), 'volumetria': data['volumetria'],
         'prazo_medio': round(sum(ps)/len(ps)) if ps else 0,
         'v_pago': round(data['v_pago'],2), 'v_aberto': round(data['v_aberto'],2), 'v_sem_info': 0.0,
         'n_pago': data['n_pago'], 'n_aberto': data['n_aberto'], 'n_sem_info': 0,
