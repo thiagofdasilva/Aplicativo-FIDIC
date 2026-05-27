@@ -37,6 +37,11 @@ for r in reader:
     except: rst = 0.0
     csv_lkp[key] = {'data_pag': data_pag_csv, 'restante': rst}
 
+# Índice NF → parcelas (para detectar divergência de parcela)
+csv_nf_map = defaultdict(list)
+for k in csv_lkp:
+    csv_nf_map[k[:-3]].append(k[-3:])
+
 print(f'CSV: {len(csv_lkp):,} titulos pagos carregados')
 
 # ─── STEP 2: varrer planilha FIDC e fazer join ────────────────────────────────
@@ -108,6 +113,13 @@ for sk, display in SHEET_NAMES.items():
         status   = 'Pago' if info else 'Não pago'
         restante = info['restante'] if info else 0.0
 
+        # Detectar divergência de parcela (mesmo NF, parcela diferente no CSV)
+        hint_par = ''
+        if not info and nf_raw:
+            alts = [p for p in csv_nf_map.get(nf_raw, []) if p != par_raw]
+            if alts:
+                hint_par = '⚠ ACS parc ' + '/'.join(str(int(p)) for p in sorted(alts))
+
         # Data de pagamento: 1ª DATA RECOMPRA da planilha; 2ª data exata do CSV
         data_rec = row[drec_idx] if drec_idx is not None and row[drec_idx] is not None else None
         if isinstance(data_rec, datetime):
@@ -154,7 +166,7 @@ for sk, display in SHEET_NAMES.items():
             'restante':     round(restante, 2),
             'dias_deb':     0,
             'status':       status,
-            'sit_interna':  str(row[sit_idx]).strip() if sit_idx is not None and row[sit_idx] is not None else '',
+            'sit_interna':  (str(row[sit_idx]).strip() if sit_idx is not None and row[sit_idx] is not None else '') + (f'  {hint_par}' if hint_par else ''),
         })
         n_reg += 1
 
@@ -214,6 +226,12 @@ for row in rows_g[1:]:
         data_pag_g = None
         fonte_pag_g = '—'
 
+    hint_par_g = ''
+    if status == 'Não pago' and nf_raw:
+        alts_g = [p for p in csv_nf_map.get(nf_raw, []) if p != par_raw]
+        if alts_g:
+            hint_par_g = '⚠ ACS parc ' + '/'.join(str(int(p)) for p in sorted(alts_g))
+
     data_cess = row[dat_gi] if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
     try:    nf_int = int(nf_raw) if nf_raw.isdigit() else nf_raw
     except: nf_int = nf_raw
@@ -236,7 +254,7 @@ for row in rows_g[1:]:
         'restante':     0.0,
         'dias_deb':     0,
         'status':       status,
-        'sit_interna':  sit.capitalize() if sit else '',
+        'sit_interna':  (sit.capitalize() if sit else '') + (f'  {hint_par_g}' if hint_par_g else ''),
     })
     n_reg_g += 1
 
@@ -435,6 +453,7 @@ for r in registros:
     sc   = C['grn'] if r['status']=='Pago' else (C['red'] if r['status']=='Não pago' else C['txt3'])
     fc   = '7C3AED' if r['fonte_pag']=='DATA RECOMPRA' else ('94A3B8' if r['fonte_pag']=='Estimado (Venc.+Dias)' else C['txt3'])
     dias_ref = (r['vencimento'] - HOJE).days if r['vencimento'] else None
+    sit_color = 'F97316' if '⚠' in (r['sit_interna'] or '') else C['txt2']
     #         1-FIDC  2-Cliente  3-CNPJ  4-NF  5-Parcela  6-Cessão  7-Venc  8-DataPag  9-Dias  10-Valor  11-Deságio  12-Líq  13-Status  14-FontePag  15-Sit
     vals=[r['fidc'],r['cliente'],r['cnpj'],r['nf'],r['parcela'],
           r['data_cessao'],r['vencimento'],r['data_pag'],dias_ref,
@@ -460,7 +479,7 @@ for r in registros:
         elif ci==12: c.font=Font(bold=True,color=C['txt'],size=8,name='Calibri'); c.number_format='#,##0.00'; c.alignment=aln('right')
         elif ci==13: c.font=Font(bold=True,color=sc,size=8,name='Calibri'); c.alignment=aln('center')
         elif ci==14: c.font=fnt(color=fc,size=8); c.alignment=aln('center')
-        elif ci==15: c.font=fnt(color=C['txt2'],size=8); c.alignment=aln('center')
+        elif ci==15: c.font=Font(bold='⚠' in (r['sit_interna'] or ''),color=sit_color,size=8,name='Calibri'); c.alignment=aln('center')
     dr += 1
 
 # Linha total
@@ -515,6 +534,7 @@ for fidc in fidcs:
             dias_ref=(r['vencimento']-HOJE).days if r['vencimento'] else None
             fc_=('7C3AED' if r['fonte_pag']=='DATA RECOMPRA' else
                  ('94A3B8' if r['fonte_pag']=='Estimado (Venc.+Dias)' else C['txt3']))
+            sit_c_='F97316' if '⚠' in (r['sit_interna'] or '') else C['txt2']
             #    1-Cli  2-CNPJ  3-NF  4-Parc  5-Cessão  6-Venc  7-DataPag  8-Dias  9-Valor  10-Deság  11-Líq  12-Status  13-Fonte  14-Sit
             vals_f=[r['cliente'],r['cnpj'],r['nf'],r['parcela'],
                     r['data_cessao'],r['vencimento'],r['data_pag'],dias_ref,
@@ -539,7 +559,7 @@ for fidc in fidcs:
                 elif ci==11: c.font=Font(bold=True,color=C['txt'],size=8,name='Calibri'); c.number_format='#,##0.00'; c.alignment=aln('right')
                 elif ci==12: c.font=Font(bold=True,color=sc,size=8,name='Calibri'); c.alignment=aln('center')
                 elif ci==13: c.font=fnt(color=fc_,size=8); c.alignment=aln('center')
-                elif ci==14: c.font=fnt(color=C['txt2'],size=8); c.alignment=aln('center')
+                elif ci==14: c.font=Font(bold='⚠' in (r['sit_interna'] or ''),color=sit_c_,size=8,name='Calibri'); c.alignment=aln('center')
 
         # Sub-total por mês
         ri_st = ws_f.max_row+1
