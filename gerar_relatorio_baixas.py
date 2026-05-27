@@ -1,13 +1,13 @@
 """
 Relatório de baixas Jan/Fev/Mar 2026
-Lógica: JOIN entre planilha FIDC + ACS Faturas via chave NF.lstrip('0') + PARCELA.zfill(3)
+Lógica: JOIN entre planilha FIDC + Faturas Recebidas via chave NF.lstrip('0') + PARCELA.zfill(3)
 Data de referência: VENCIMENTO (no mês alvo)
-Status de pagamento: ACS Faturas CSV
+Status: presente no CSV = Pago (com data exata); ausente = Não pago
 """
 import openpyxl, csv, io
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -15,42 +15,29 @@ MESES_ALVO  = {(2026, 1), (2026, 2), (2026, 3)}
 NOMES_MESES = {1: 'Janeiro/2026', 2: 'Fevereiro/2026', 3: 'Março/2026'}
 HOJE = datetime.today()
 
-# ─── STEP 1: montar lookup ACS Faturas ────────────────────────────────────────
-with open('ACS Faturas.csv', 'r', encoding='utf-8', errors='replace') as f:
+# ─── STEP 1: montar lookup Faturas Recebidas ──────────────────────────────────
+with open('FINFATURASRECEBIDASPORDATADERECEBIMENTOCTRECEBERACS.csv', 'r', encoding='utf-8', errors='replace') as f:
     content = f.read()
 reader = csv.DictReader(io.StringIO(content))
 fn = reader.fieldnames
-col_nf, col_par = fn[1], fn[3]
-col_val_csv, col_rst, col_deb, col_sts = fn[6], fn[7], fn[8], fn[17]
+col_nf  = fn[7]   # Número da Nota Fiscal
+col_par = fn[15]  # Numero Parcela - ACS
+col_pag = fn[1]   # Data pagamento (exata)
+col_rst = fn[14]  # Valor restante
 
-col_venc_csv = fn[5]   # Data de vencimento no CSV (para calcular data pagamento)
-
-csv_lkp = {}   # chave -> {status, valor_csv, restante, dias_deb, data_pag_est}
+csv_lkp = {}   # chave -> {data_pag, restante}
 for r in reader:
     nf  = str(r[col_nf]).lstrip('0')
     par = str(r[col_par]).zfill(3)
     key = nf + par
-    try:    vc  = float(r[col_val_csv])
-    except: vc  = 0.0
-    try:    rst = float(r[col_rst])
+    # Data de pagamento exata
+    try:    data_pag_csv = datetime.strptime(r[col_pag].strip(), '%d/%m/%Y')
+    except: data_pag_csv = None
+    try:    rst = float(r[col_rst].replace(',','.').strip()) if r[col_rst].strip() not in ('','.00','-') else 0.0
     except: rst = 0.0
-    try:    deb = int(float(r[col_deb]))
-    except: deb = 0
-    st = r[col_sts].strip()
-    if st.lower().startswith('n') and 'pago' in st.lower():
-        st = 'Não pago'
-    # Estimar data de pagamento: vencimento + dias_em_debito (só para Status=Pago)
-    data_pag_est = None
-    if st == 'Pago':
-        try:
-            venc_csv = datetime.strptime(r[col_venc_csv].strip(), '%d/%m/%Y')
-            data_pag_est = venc_csv + timedelta(days=deb)
-        except:
-            data_pag_est = None
-    csv_lkp[key] = {'status': st, 'valor_csv': vc, 'restante': rst,
-                    'dias_deb': deb, 'data_pag_est': data_pag_est}
+    csv_lkp[key] = {'data_pag': data_pag_csv, 'restante': rst}
 
-print(f'CSV: {len(csv_lkp):,} registros carregados')
+print(f'CSV: {len(csv_lkp):,} titulos pagos carregados')
 
 # ─── STEP 2: varrer planilha FIDC e fazer join ────────────────────────────────
 wb_src = openpyxl.load_workbook(
@@ -116,20 +103,19 @@ for sk, display in SHEET_NAMES.items():
         except:
             key = ''
 
-        # Join com ACS
-        info = csv_lkp.get(key, {})
-        status   = info.get('status', 'Sem registro')
-        restante = info.get('restante', 0.0)
-        dias_deb = info.get('dias_deb', 0)
+        # Join com Faturas Recebidas
+        info     = csv_lkp.get(key)
+        status   = 'Pago' if info else 'Não pago'
+        restante = info['restante'] if info else 0.0
 
-        # Data de pagamento: 1ª opção DATA RECOMPRA da planilha; 2ª Venc+Dias (CSV)
+        # Data de pagamento: 1ª DATA RECOMPRA da planilha; 2ª data exata do CSV
         data_rec = row[drec_idx] if drec_idx is not None and row[drec_idx] is not None else None
         if isinstance(data_rec, datetime):
             data_pagamento = data_rec
             fonte_pag = 'DATA RECOMPRA'
-        elif info.get('data_pag_est') and status == 'Pago':
-            data_pagamento = info['data_pag_est']
-            fonte_pag = 'Estimado (Venc.+Dias)'
+        elif info and info.get('data_pag'):
+            data_pagamento = info['data_pag']
+            fonte_pag = 'ACS'
         else:
             data_pagamento = None
             fonte_pag = '—'
@@ -166,7 +152,7 @@ for sk, display in SHEET_NAMES.items():
             'desagio':      round(des, 2),
             'val_liq':      round(v - des, 2),
             'restante':     round(restante, 2),
-            'dias_deb':     dias_deb,
+            'dias_deb':     0,
             'status':       status,
             'sit_interna':  str(row[sit_idx]).strip() if sit_idx is not None and row[sit_idx] is not None else '',
         })
@@ -206,14 +192,27 @@ for row in rows_g[1:]:
         if des_gv >= v: des_gv = 0.0
     except: des_gv = 0.0
 
-    sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
-    status = 'Pago' if 'BAIXADO' in sit else 'Não pago'
-
     try:
         nf_raw  = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
         par_raw = str(int(float(str(row[par_gi])))).zfill(3) if par_gi is not None and row[par_gi] is not None else '001'
     except:
         nf_raw, par_raw = '', '001'
+    key_g = nf_raw + par_raw
+
+    sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    csv_info_g = csv_lkp.get(key_g)
+    if 'BAIXADO' in sit or csv_info_g:
+        status = 'Pago'
+        if csv_info_g and csv_info_g.get('data_pag'):
+            data_pag_g = csv_info_g['data_pag']
+            fonte_pag_g = 'ACS'
+        else:
+            data_pag_g = None
+            fonte_pag_g = '—'
+    else:
+        status = 'Não pago'
+        data_pag_g = None
+        fonte_pag_g = '—'
 
     data_cess = row[dat_gi] if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
     try:    nf_int = int(nf_raw) if nf_raw.isdigit() else nf_raw
@@ -225,8 +224,8 @@ for row in rows_g[1:]:
         'mes_nome':     NOMES_MESES[venc.month],
         'data_cessao':  data_cess,
         'vencimento':   venc,
-        'data_pag':     None,
-        'fonte_pag':    '—',
+        'data_pag':     data_pag_g,
+        'fonte_pag':    fonte_pag_g,
         'cliente':      str(row[cli_gi]) if cli_gi is not None and row[cli_gi] is not None else '',
         'cnpj':         str(row[cnpj_gi]) if cnpj_gi is not None and row[cnpj_gi] is not None else '',
         'nf':           nf_int,
@@ -319,7 +318,7 @@ for ci, w in enumerate([3,22,16,16,16,16,14,14,10,10,10], 1):
 titulo_ws(ws_r, 2, 'BAIXAS — JAN / FEV / MAR 2026  |  RESUMO CONSOLIDADO', C['acc'], 11)
 ws_r.row_dimensions[3].height = 18
 ws_r.merge_cells('A3:K3')
-ws_r['A3'] = f'  Gerado em {HOJE.strftime("%d/%m/%Y %H:%M")}  •  {len(registros):,} registros  •  Fonte: VENCIMENTO (planilha FIDC) + Status (ACS Faturas)'
+ws_r['A3'] = f'  Gerado em {HOJE.strftime("%d/%m/%Y %H:%M")}  •  {len(registros):,} registros  •  Fonte: VENCIMENTO (planilha FIDC) + Status (Faturas Recebidas ACS)'
 ws_r['A3'].font = Font(color=C['txt2'], size=8, italic=True, name='Calibri')
 ws_r['A3'].fill = fill(C['bg3']); ws_r['A3'].alignment = aln('left')
 
@@ -640,21 +639,15 @@ for sk, display in SHEET_NAMES.items():
         except:
             nf_r, pa_r, key2 = '', '001', ''
 
-        info2 = csv_lkp.get(key2, {})
-        st2   = info2.get('status', 'Sem registro')
-        if st2 == 'Pago':
-            st_enc = 'P'
-        elif st2 and 'pago' in st2.lower() and st2.strip()[0].lower() == 'n':
-            st_enc = 'N'
-        else:
-            st_enc = 'S'
+        info2  = csv_lkp.get(key2)
+        st_enc = 'P' if info2 else 'N'
 
-        # Data pagamento
+        # Data pagamento: 1ª DATA RECOMPRA; 2ª data exata do CSV
         dr2 = row[drec2] if drec2 is not None and row[drec2] is not None else None
         if isinstance(dr2, datetime):
             dp_str = dr2.strftime('%Y-%m-%d')
-        elif info2.get('data_pag_est') and st2 == 'Pago':
-            dp_str = info2['data_pag_est'].strftime('%Y-%m-%d')
+        elif info2 and info2.get('data_pag'):
+            dp_str = info2['data_pag'].strftime('%Y-%m-%d')
         else:
             dp_str = None
 
@@ -690,14 +683,17 @@ for row in rows_g[1:]:
     except: v = 0.0
     if v <= 0: continue
 
-    sit_g2 = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
-    st_enc = 'P' if 'BAIXADO' in sit_g2 else 'N'
-
     try:
         nf_rg  = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
         pa_rg  = str(int(float(str(row[par_gi])))).zfill(3) if par_gi is not None and row[par_gi] is not None else '001'
     except:
         nf_rg, pa_rg = '', '001'
+    key_g2 = nf_rg + pa_rg
+
+    sit_g2 = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    info_g2 = csv_lkp.get(key_g2)
+    st_enc = 'P' if 'BAIXADO' in sit_g2 or info_g2 else 'N'
+    dp_str_g = info_g2['data_pag'].strftime('%Y-%m-%d') if info_g2 and info_g2.get('data_pag') else None
 
     try:
         des_gjs = float(row[des_gi]) if des_gi is not None and isinstance(row[des_gi], (int, float)) else 0.0
@@ -714,7 +710,7 @@ for row in rows_g[1:]:
     records_js.append([
         'GRAFENO', cli_dict_js[cli_g2], mes_str, venc.day,
         cess_str_g, nf_js_g, int(pa_rg),
-        round(v, 2), round(des_gjs, 2), st_enc, None,
+        round(v, 2), round(des_gjs, 2), st_enc, dp_str_g,
     ])
 
 js_obj = {

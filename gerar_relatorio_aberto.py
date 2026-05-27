@@ -1,5 +1,5 @@
 """
-Gera relatório Excel de títulos em aberto cruzando planilha FIDC x ACS Faturas.csv
+Gera relatório Excel de títulos em aberto cruzando planilha FIDC x Faturas Recebidas ACS
 """
 import openpyxl, csv, io
 from openpyxl.styles import (Font, PatternFill, Alignment, Border, Side,
@@ -8,32 +8,21 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from datetime import datetime, date
 
-# ─── CSV ACS FATURAS ──────────────────────────────────────────────────────────
-with open('ACS Faturas.csv', 'r', encoding='utf-8', errors='replace') as f:
+# ─── CSV FATURAS RECEBIDAS (Pago = presente; ausente = Não pago) ──────────────
+with open('FINFATURASRECEBIDASPORDATADERECEBIMENTOCTRECEBERACS.csv', 'r', encoding='utf-8', errors='replace') as f:
     content = f.read()
 
 reader = csv.DictReader(io.StringIO(content))
 fn = reader.fieldnames
-col_nf, col_par = fn[1], fn[3]
-col_val, col_rst, col_deb, col_sts = fn[6], fn[7], fn[8], fn[17]
+col_nf  = fn[7]   # Número da Nota Fiscal
+col_par = fn[15]  # Numero Parcela - ACS
 
-csv_lookup = {}
+# Conjunto de chaves pagas — ausência = aberto
+csv_lookup = set()
 for r in reader:
     nf  = str(r[col_nf]).lstrip('0')
     par = str(r[col_par]).zfill(3)
-    key = nf + par
-    try:    vr = float(r[col_rst])
-    except: vr = 0.0
-    try:    deb = int(float(r[col_deb]))
-    except: deb = 0
-    try:    val = float(r[col_val])
-    except: val = 0.0
-    csv_lookup[key] = {
-        'status':   r[col_sts],
-        'valor':    val,
-        'restante': vr,
-        'dias_deb': deb,
-    }
+    csv_lookup.add(nf + par)
 
 # ─── EXCEL FIDIC ──────────────────────────────────────────────────────────────
 wb_src = openpyxl.load_workbook(
@@ -91,21 +80,10 @@ for sk, display in SHEET_NAMES.items():
         except:
             key = ''
 
-        info = csv_lookup.get(key)
-        if not info:
+        # Título pago = encontrado no CSV de recebidos → pular
+        if key in csv_lookup:
             continue
-        status = info['status']
-        if status not in ('Não pago', 'N￝o pago', 'Parcialmente pago'):
-            # manter apenas abertos
-            if 'pago' not in status.lower() or status.lower().startswith('p') and 'arc' not in status.lower():
-                if status == 'Pago':
-                    continue
-            else:
-                continue
-
-        # normalizar status com encoding quebrado
-        if 'pago' in status.lower() and status.lower()[0] == 'n':
-            status = 'Não pago'
+        status = 'Não pago'
 
         # datas
         data_cess = row[dat_idx] if dat_idx is not None else None
@@ -132,7 +110,7 @@ for sk, display in SHEET_NAMES.items():
             'valor':     v,
             'desagio':   desagio,
             'valor_liq': round(v - desagio, 2),
-            'restante':  info['restante'],
+            'restante':  v,
             'data_cess': data_cess,
             'vencimento': vencimento,
             'dias_venc': dias_venc,

@@ -1,36 +1,30 @@
 """
-Gera dados mensais por FIDC com status de pagamento do CSV ACS Faturas.
+Gera dados mensais por FIDC com status de pagamento do CSV de faturas recebidas.
 Chave de cruzamento: str(NOTA_FISCAL).lstrip('0') + str(PARCELA).zfill(3)
+Arquivo: FINFATURASRECEBIDASPORDATADERECEBIMENTOCTRECEBERACS.csv
+Lógica: presente no arquivo = Pago; ausente = Não pago
 """
 import openpyxl, json, csv, io
 from datetime import datetime
 from collections import defaultdict
 
-# ─── CSV ACS FATURAS ──────────────────────────────────────────────────────────
-with open('ACS Faturas.csv', 'r', encoding='utf-8', errors='replace') as f:
+# ─── CSV FATURAS RECEBIDAS ────────────────────────────────────────────────────
+with open('FINFATURASRECEBIDASPORDATADERECEBIMENTOCTRECEBERACS.csv', 'r', encoding='utf-8', errors='replace') as f:
     content = f.read()
 
 reader = csv.DictReader(io.StringIO(content))
 fn = reader.fieldnames
-col_nf, col_par, col_val, col_rst, col_sts = fn[1], fn[3], fn[6], fn[7], fn[17]
+col_nf  = fn[7]   # Número da Nota Fiscal
+col_par = fn[15]  # Numero Parcela - ACS
 
-csv_lookup = {}   # key -> {'status', 'valor', 'valor_restante'}
+# Conjunto de chaves pagas (presença = Pago, ausência = Não pago)
+csv_lookup = set()
 for r in reader:
     nf  = str(r[col_nf]).lstrip('0')
     par = str(r[col_par]).zfill(3)
-    key = nf + par
-    try:    valor = float(r[col_val])
-    except: valor = 0.0
-    try:    restante = float(r[col_rst])
-    except: restante = 0.0
-    csv_lookup[key] = {
-        'status':   r[col_sts],
-        'valor':    valor,
-        'restante': restante,
-    }
+    csv_lookup.add(nf + par)
 
-print(f'CSV carregado: {len(csv_lookup):,} registros')
-print(f'Status únicos: {set(v["status"] for v in csv_lookup.values())}')
+print(f'CSV carregado: {len(csv_lookup):,} titulos pagos')
 
 # ─── EXCEL ────────────────────────────────────────────────────────────────────
 wb = openpyxl.load_workbook(
@@ -93,8 +87,7 @@ def process(ws, display_name):
         except:
             key = ''
 
-        info = csv_lookup.get(key)
-        status = info['status'] if info else 'Sem registro'
+        is_pago = key in csv_lookup
 
         ym = d.strftime('%Y-%m')
         m  = monthly[ym]
@@ -120,21 +113,13 @@ def process(ws, display_name):
                     m['prazos'].append(p)
 
         # Status
-        if status == 'Pago':
+        if is_pago:
             m['v_pago']  += v
             m['n_pago']  += 1
             matched += 1
-        elif status in ('Não pago', 'N�о pago', 'Nao pago') or (info and 'pago' in status.lower() and ('n' in status[:2].lower())):
+        else:
             m['v_aberto']  += v
             m['n_aberto']  += 1
-            matched += 1
-        elif status == 'Parcialmente pago':
-            m['v_aberto']  += v   # tratar como aberto
-            m['n_aberto']  += 1
-            matched += 1
-        else:
-            m['v_sem_info'] += v
-            m['n_sem_info'] += 1
             no_match += 1
 
     # Finalizar meses
