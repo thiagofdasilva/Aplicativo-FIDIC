@@ -139,6 +139,60 @@ for sk, display in SHEET_NAMES.items():
             'status':    status,
         })
 
+# ─── GRAFENO: arquivo separado, em aberto = SITUAÇÃO NORMAL ──────────────────
+wb_g = openpyxl.load_workbook('CONTROLE BOLETOS  FIDC - GRAFENO - 2024.xlsx', data_only=True)
+ws_g = wb_g['BOLETOS FIDC']
+rows_g = list(ws_g.iter_rows(values_only=True))
+hc_g = [str(h).strip().upper() if h else '' for h in rows_g[0]]
+nf_gi    = next((i for i,h in enumerate(hc_g) if 'NOTA' in h or h == 'NF'), None)
+par_gi   = next((i for i,h in enumerate(hc_g) if 'PARCELA' in h), None)
+val_gi   = next((i for i,h in enumerate(hc_g) if 'VALOR' in h and 'R$' in h), None)
+dat_gi   = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
+venc_gi  = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
+cli_gi   = next((i for i,h in enumerate(hc_g) if 'CLIENTE' in h), None)
+cnpj_gi  = next((i for i,h in enumerate(hc_g) if 'CNPJ' in h), None)
+sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
+cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+
+for row in rows_g[1:]:
+    if not any(v is not None for v in row): continue
+    if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
+    sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    if 'BAIXADO' in sit: continue  # já pago, não é aberto
+    try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
+    except: v = 0.0
+    if v <= 0: continue
+
+    try:
+        nf_raw = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
+        par_raw = str(int(float(str(row[par_gi])))).zfill(3) if par_gi is not None and row[par_gi] is not None else '001'
+    except:
+        nf_raw, par_raw = '', '001'
+
+    data_cess = row[dat_gi] if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
+    vencimento = row[venc_gi] if venc_gi is not None else None
+    dias_venc = None
+    if isinstance(vencimento, datetime):
+        dias_venc = (hoje - vencimento).days
+    elif isinstance(vencimento, date):
+        dias_venc = (hoje.date() - vencimento).days
+
+    registros.append({
+        'fidc':       'GRAFENO',
+        'cliente':    str(row[cli_gi]) if cli_gi is not None and row[cli_gi] is not None else '',
+        'cnpj':       str(row[cnpj_gi]) if cnpj_gi is not None and row[cnpj_gi] is not None else '',
+        'nf':         int(nf_raw) if nf_raw.isdigit() else nf_raw,
+        'parcela':    int(par_raw) if par_raw.isdigit() else 1,
+        'valor':      v,
+        'desagio':    0.0,
+        'valor_liq':  round(v, 2),
+        'restante':   v,
+        'data_cess':  data_cess,
+        'vencimento': vencimento,
+        'dias_venc':  dias_venc,
+        'status':     'Não pago',
+    })
+
 # Ordenar: FIDC, depois vencimento mais antigo primeiro
 registros.sort(key=lambda r: (
     r['fidc'],
@@ -505,3 +559,30 @@ print(f'\nRelatorio salvo: {filename}')
 print(f'  Titulos em aberto: {len(registros)}')
 print(f'  Valor total:       R$ {total_val:,.2f}')
 print(f'  FIDCs com abertos: {len(fidcs_order)}')
+
+# ─── Gerar abertos_raw.js para o dashboard ────────────────────────────────────
+import json as _json
+ab_records = []
+for r in registros:
+    venc_str = r['vencimento'].strftime('%Y-%m-%d') if isinstance(r['vencimento'], datetime) else (
+               r['vencimento'].strftime('%Y-%m-%d') if isinstance(r['vencimento'], date) else None)
+    cess_str = r['data_cess'].strftime('%Y-%m-%d') if isinstance(r['data_cess'], datetime) else None
+    ab_records.append([
+        r['fidc'], r['cliente'], r['cnpj'],
+        r['nf'], r['parcela'],
+        cess_str, venc_str,
+        r['dias_venc'],
+        round(r['valor'], 2),
+        round(r['desagio'], 2),
+        round(r['valor_liq'], 2),
+        'Nao pago',
+    ])
+ab_obj = {
+    'h': ['FIDC','Cliente','CNPJ','NF','Parcela','Data Cessao','Vencimento',
+          'Dias Vencido','Valor','Desagio','Valor Liq','Status'],
+    'd': ab_records,
+}
+js_ab = 'var ABERTOS_RAW=' + _json.dumps(ab_obj, ensure_ascii=False, separators=(',',':')) + ';'
+with open('abertos_raw.js', 'w', encoding='utf-8') as f:
+    f.write(js_ab)
+print(f'  abertos_raw.js: {len(ab_records):,} registros')

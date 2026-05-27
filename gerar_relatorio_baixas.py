@@ -174,6 +174,69 @@ for sk, display in SHEET_NAMES.items():
 
     print(f'  {display:<15}: {n_reg:>5} registros com vencimento em jan-mar/2026')
 
+# ─── GRAFENO: arquivo separado, status via SITUAÇÃO ──────────────────────────
+wb_g = openpyxl.load_workbook('CONTROLE BOLETOS  FIDC - GRAFENO - 2024.xlsx', data_only=True)
+ws_g = wb_g['BOLETOS FIDC']
+rows_g = list(ws_g.iter_rows(values_only=True))
+hc_g = [str(h).strip().upper() if h else '' for h in rows_g[0]]
+nf_gi    = next((i for i,h in enumerate(hc_g) if 'NOTA' in h or h == 'NF'), None)
+par_gi   = next((i for i,h in enumerate(hc_g) if 'PARCELA' in h), None)
+val_gi   = next((i for i,h in enumerate(hc_g) if 'VALOR' in h and 'R$' in h), None)
+dat_gi   = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
+venc_gi  = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
+cli_gi   = next((i for i,h in enumerate(hc_g) if 'CLIENTE' in h), None)
+cnpj_gi  = next((i for i,h in enumerate(hc_g) if 'CNPJ' in h), None)
+sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
+cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+
+n_reg_g = 0
+for row in rows_g[1:]:
+    if not any(v is not None for v in row): continue
+    if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
+    venc = row[venc_gi]
+    if not isinstance(venc, datetime): continue
+    if (venc.year, venc.month) not in MESES_ALVO: continue
+    try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
+    except: v = 0.0
+    if v <= 0: continue
+
+    sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    status = 'Pago' if 'BAIXADO' in sit else 'Não pago'
+
+    try:
+        nf_raw  = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
+        par_raw = str(int(float(str(row[par_gi])))).zfill(3) if par_gi is not None and row[par_gi] is not None else '001'
+    except:
+        nf_raw, par_raw = '', '001'
+
+    data_cess = row[dat_gi] if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
+    try:    nf_int = int(nf_raw) if nf_raw.isdigit() else nf_raw
+    except: nf_int = nf_raw
+
+    registros.append({
+        'fidc':        'GRAFENO',
+        'mes':          venc.month,
+        'mes_nome':     NOMES_MESES[venc.month],
+        'data_cessao':  data_cess,
+        'vencimento':   venc,
+        'data_pag':     None,
+        'fonte_pag':    '—',
+        'cliente':      str(row[cli_gi]) if cli_gi is not None and row[cli_gi] is not None else '',
+        'cnpj':         str(row[cnpj_gi]) if cnpj_gi is not None and row[cnpj_gi] is not None else '',
+        'nf':           nf_int,
+        'parcela':      int(par_raw),
+        'valor':        round(v, 2),
+        'desagio':      0.0,
+        'val_liq':      round(v, 2),
+        'restante':     0.0,
+        'dias_deb':     0,
+        'status':       status,
+        'sit_interna':  sit.capitalize() if sit else '',
+    })
+    n_reg_g += 1
+
+print(f'  {"GRAFENO":<15}: {n_reg_g:>5} registros com vencimento em jan-mar/2026')
+
 # Ordenar: FIDC → mês → vencimento
 registros.sort(key=lambda r: (r['fidc'], r['mes'], r['vencimento']))
 print(f'\nTotal geral: {len(registros):,} registros')
@@ -610,6 +673,38 @@ for sk, display in SHEET_NAMES.items():
             cess_str, nf_js, int(pa_r),
             round(v, 2), round(des_v, 2), st_enc, dp_str,
         ])
+
+# GRAFENO no baixas_raw.js (todos vencimentos a partir de 2025)
+for row in rows_g[1:]:
+    if not any(v is not None for v in row): continue
+    if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
+    venc = row[venc_gi]
+    if not isinstance(venc, datetime) or venc < VENC_MIN: continue
+    try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
+    except: v = 0.0
+    if v <= 0: continue
+
+    sit_g2 = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    st_enc = 'P' if 'BAIXADO' in sit_g2 else 'N'
+
+    try:
+        nf_rg  = str(row[nf_gi]).lstrip('0') if nf_gi is not None and row[nf_gi] is not None else ''
+        pa_rg  = str(int(float(str(row[par_gi])))).zfill(3) if par_gi is not None and row[par_gi] is not None else '001'
+    except:
+        nf_rg, pa_rg = '', '001'
+
+    cess_str_g = row[dat_gi].strftime('%Y-%m-%d') if dat_gi is not None and isinstance(row[dat_gi], datetime) else None
+    nf_js_g = int(nf_rg) if nf_rg.isdigit() else nf_rg
+    cli_g2 = str(row[cli_gi]) if cli_gi is not None and row[cli_gi] is not None else ''
+    if cli_g2 not in cli_dict_js:
+        cli_dict_js[cli_g2] = len(cli_arr_js); cli_arr_js.append(cli_g2)
+    mes_str = venc.strftime('%Y-%m')
+    months_set.add(mes_str)
+    records_js.append([
+        'GRAFENO', cli_dict_js[cli_g2], mes_str, venc.day,
+        cess_str_g, nf_js_g, int(pa_rg),
+        round(v, 2), 0.0, st_enc, None,
+    ])
 
 js_obj = {
     'h': ['FIDC','Cli','MesVenc','DiaVenc','Cessao','NF','Parcela','Valor','Desagio','Status','DataPag'],

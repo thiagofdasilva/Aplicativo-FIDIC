@@ -7,8 +7,18 @@
       "data_fim": "16/09/2026",
       "volumetria": 9555,
       "prazo_medio": 49,
-      "representatividade": 36.65,
+      "representatividade": 28.93,
       "desagio_pct": 6.73
+    },
+    "GRAFENO": {
+      "valor": 165868718.82,
+      "desagio": 0.0,
+      "data_inicio": "30/04/2024",
+      "data_fim": "14/08/2026",
+      "volumetria": 8210,
+      "prazo_medio": 43,
+      "representatividade": 21.07,
+      "desagio_pct": 0.0
     },
     "DAYCOVAL": {
       "valor": 75752136.74,
@@ -17,7 +27,7 @@
       "data_fim": "06/08/2026",
       "volumetria": 3564,
       "prazo_medio": 43,
-      "representatividade": 12.19,
+      "representatividade": 9.62,
       "desagio_pct": 2.42
     },
     "ALL SEC": {
@@ -27,7 +37,7 @@
       "data_fim": "17/08/2026",
       "volumetria": 2656,
       "prazo_medio": 46,
-      "representatividade": 8.46,
+      "representatividade": 6.68,
       "desagio_pct": 4.58
     },
     "SAFRA": {
@@ -37,17 +47,17 @@
       "data_fim": "03/08/2026",
       "volumetria": 2585,
       "prazo_medio": 41,
-      "representatividade": 7.42,
+      "representatividade": 5.85,
       "desagio_pct": 3.15
     },
-    "ARTICO": {
+    "ÁRTICO": {
       "valor": 42489001.9,
       "desagio": 3005586.33,
       "data_inicio": "17/06/2025",
       "data_fim": "08/07/2026",
       "volumetria": 1884,
       "prazo_medio": 49,
-      "representatividade": 6.84,
+      "representatividade": 5.4,
       "desagio_pct": 7.07
     },
     "ONE 7": {
@@ -57,7 +67,7 @@
       "data_fim": "30/07/2026",
       "volumetria": 1007,
       "prazo_medio": 51,
-      "representatividade": 4.22,
+      "representatividade": 3.33,
       "desagio_pct": 5.43
     },
     "OPHIR": {
@@ -67,7 +77,7 @@
       "data_fim": "21/07/2026",
       "volumetria": 753,
       "prazo_medio": 59,
-      "representatividade": 4.15,
+      "representatividade": 3.28,
       "desagio_pct": 6.0
     },
     "ASA": {
@@ -77,7 +87,7 @@
       "data_fim": "24/07/2026",
       "volumetria": 1183,
       "prazo_medio": 48,
-      "representatividade": 3.69,
+      "representatividade": 2.92,
       "desagio_pct": 6.36
     },
     "YAALEH": {
@@ -87,7 +97,7 @@
       "data_fim": "11/08/2026",
       "volumetria": 886,
       "prazo_medio": 48,
-      "representatividade": 3.58,
+      "representatividade": 2.83,
       "desagio_pct": 5.79
     },
     "RED ASSET": {
@@ -97,7 +107,7 @@
       "data_fim": "11/08/2026",
       "volumetria": 1002,
       "prazo_medio": 50,
-      "representatividade": 2.99,
+      "representatividade": 2.36,
       "desagio_pct": 8.16
     },
     "JUMP": {
@@ -107,7 +117,7 @@
       "data_fim": "30/07/2026",
       "volumetria": 745,
       "prazo_medio": 47,
-      "representatividade": 2.46,
+      "representatividade": 1.94,
       "desagio_pct": 8.46
     },
     "MULTIPLIKE": {
@@ -117,7 +127,7 @@
       "data_fim": "29/06/2026",
       "volumetria": 736,
       "prazo_medio": 47,
-      "representatividade": 2.45,
+      "representatividade": 1.94,
       "desagio_pct": 5.43
     },
     "KREDITON": {
@@ -127,7 +137,7 @@
       "data_fim": "17/07/2026",
       "volumetria": 332,
       "prazo_medio": 57,
-      "representatividade": 1.97,
+      "representatividade": 1.55,
       "desagio_pct": 6.21
     },
     "ASIA": {
@@ -137,7 +147,7 @@
       "data_fim": "23/07/2026",
       "volumetria": 214,
       "prazo_medio": 48,
-      "representatividade": 0.68,
+      "representatividade": 0.54,
       "desagio_pct": 8.92
     },
     "AUDAX": {
@@ -147,7 +157,7 @@
       "data_fim": "09/10/2025",
       "volumetria": 188,
       "prazo_medio": 42,
-      "representatividade": 0.68,
+      "representatividade": 0.54,
       "desagio_pct": 6.23
     },
     "SICOOB": {
@@ -157,7 +167,7 @@
       "data_fim": "09/07/2026",
       "volumetria": 69,
       "prazo_medio": 66,
-      "representatividade": 0.59,
+      "representatividade": 0.47,
       "desagio_pct": 3.95
     },
     "MANCHESTER": {
@@ -167,7 +177,7 @@
       "data_fim": "14/03/2026",
       "volumetria": 43,
       "prazo_medio": 88,
-      "representatividade": 0.59,
+      "representatividade": 0.47,
       "desagio_pct": 0.0
     },
     "MAIN3": {
@@ -177,7 +187,7 @@
       "data_fim": "25/12/2025",
       "volumetria": 17,
       "prazo_medio": 106,
-      "representatividade": 0.22,
+      "representatividade": 0.17,
       "desagio_pct": 1.91
     },
     "CREDVALE": {
@@ -187,7 +197,7 @@
       "data_fim": "08/06/2025",
       "volumetria": 45,
       "prazo_medio": 31,
-      "representatividade": 0.13,
+      "representatividade": 0.1,
       "desagio_pct": 4.62
     },
     "C6": {
@@ -197,12 +207,12 @@
       "data_fim": "23/06/2026",
       "volumetria": 3,
       "prazo_medio": 69,
-      "representatividade": 0.02,
+      "representatividade": 0.01,
       "desagio_pct": 0.0
     }
   },
-  "total": 621339636.91,
+  "total": 787208355.73,
   "total_desagio": 35005189.65,
-  "total_boletos": 27467,
-  "gerado_em": "16/05/2026 21:32"
+  "total_boletos": 35677,
+  "gerado_em": "27/05/2026 16:23"
 }

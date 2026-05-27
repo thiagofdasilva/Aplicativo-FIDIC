@@ -176,6 +176,61 @@ if ARTICO:
     if m:
         all_monthly['ARTICO'] = m
 
+# ─── GRAFENO: arquivo separado, status via coluna SITUAÇÃO ────────────────────
+wb_g = openpyxl.load_workbook('CONTROLE BOLETOS  FIDC - GRAFENO - 2024.xlsx', data_only=True)
+ws_g = wb_g['BOLETOS FIDC']
+rows_g = list(ws_g.iter_rows(values_only=True))
+hc_g = [str(h).strip().upper() if h else '' for h in rows_g[0]]
+val_gi   = next((i for i,h in enumerate(hc_g) if 'VALOR' in h and 'R$' in h), None)
+dat_gi   = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
+venc_gi  = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
+cedido_gi= next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+sit_gi   = next((i for i,h in enumerate(hc_g) if 'SITUA' in h), None)
+
+monthly_g = defaultdict(lambda: {
+    'valor':0.0,'desagio':0.0,'volumetria':0,'prazos':[],
+    'v_pago':0.0,'v_aberto':0.0,'v_sem_info':0.0,
+    'n_pago':0,'n_aberto':0,'n_sem_info':0,
+})
+n_pg_g = n_ab_g = 0
+for row in rows_g[1:]:
+    if not any(v is not None for v in row): continue
+    if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
+    d = row[dat_gi]
+    if not isinstance(d, datetime): continue
+    try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
+    except: v = 0.0
+    if v <= 0: continue
+
+    sit = str(row[sit_gi]).strip().upper() if sit_gi is not None and row[sit_gi] else ''
+    is_pago = 'BAIXADO' in sit
+
+    ym = d.strftime('%Y-%m')
+    m = monthly_g[ym]
+    m['valor'] += v; m['volumetria'] += 1
+    if venc_gi is not None and isinstance(row[venc_gi], datetime):
+        p = (row[venc_gi] - d).days
+        if 0 < p < 1000: m['prazos'].append(p)
+    if is_pago:
+        m['v_pago']  += v; m['n_pago']  += 1; n_pg_g += 1
+    else:
+        m['v_aberto'] += v; m['n_aberto'] += 1; n_ab_g += 1
+
+result_g = {}
+for ym, data in sorted(monthly_g.items()):
+    ps = data.pop('prazos')
+    result_g[ym] = {
+        'valor': round(data['valor'],2), 'desagio': 0.0, 'volumetria': data['volumetria'],
+        'prazo_medio': round(sum(ps)/len(ps)) if ps else 0,
+        'v_pago': round(data['v_pago'],2), 'v_aberto': round(data['v_aberto'],2), 'v_sem_info': 0.0,
+        'n_pago': data['n_pago'], 'n_aberto': data['n_aberto'], 'n_sem_info': 0,
+    }
+if result_g:
+    all_monthly['GRAFENO'] = result_g
+    total_g = sum(m['valor'] for m in result_g.values())
+    pct_g = round(n_pg_g/(n_pg_g+n_ab_g)*100,1) if (n_pg_g+n_ab_g) else 0
+    print(f'  {"GRAFENO":<15} total={total_g:>15,.2f}  match={pct_g}%  pago={n_pg_g}  aberto={n_ab_g}  sem_info=0')
+
 all_months = sorted({ym for fund in all_monthly.values() for ym in fund})
 
 out = {'monthly': all_monthly, 'all_months': all_months}

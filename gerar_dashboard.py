@@ -140,6 +140,40 @@ broken_keys = [k for k in results if 'RTICO' in k and k != 'ÁRTICO']
 for bk in broken_keys:
     results['ÁRTICO'] = results.pop(bk)
 
+# ─── GRAFENO: arquivo separado ────────────────────────────────────────────────
+wb_g = openpyxl.load_workbook('CONTROLE BOLETOS  FIDC - GRAFENO - 2024.xlsx', data_only=True)
+ws_g = wb_g['BOLETOS FIDC']
+rows_g = list(ws_g.iter_rows(values_only=True))
+hc_g = [str(h).strip().upper() if h else '' for h in rows_g[0]]
+val_gi  = next((i for i,h in enumerate(hc_g) if 'VALOR' in h and 'R$' in h), None)
+dat_gi  = next((i for i,h in enumerate(hc_g) if h == 'DATA'), None)
+venc_gi = next((i for i,h in enumerate(hc_g) if 'VENCIMENTO' in h), None)
+cedido_gi = next((i for i,h in enumerate(hc_g) if 'CEDIDO' in h), None)
+
+g_valor = g_vol = 0; g_datas = []; g_vencs = []; g_prazos = []
+for row in rows_g[1:]:
+    if not any(v is not None for v in row): continue
+    if cedido_gi is not None and not str(row[cedido_gi]).strip().upper().startswith('S'): continue
+    try: v = float(row[val_gi]) if val_gi is not None and row[val_gi] is not None else 0.0
+    except: v = 0.0
+    if v <= 0: continue
+    g_valor += v; g_vol += 1
+    d = row[dat_gi]; vd = row[venc_gi]
+    if isinstance(d, datetime): g_datas.append(d)
+    if isinstance(vd, datetime): g_vencs.append(vd)
+    if isinstance(d, datetime) and isinstance(vd, datetime):
+        p = (vd - d).days
+        if 0 < p < 1000: g_prazos.append(p)
+
+if g_valor > 0:
+    results['GRAFENO'] = {
+        'valor': round(g_valor, 2), 'desagio': 0.0,
+        'data_inicio': min(g_datas).strftime('%d/%m/%Y') if g_datas else 'N/A',
+        'data_fim':    max(g_vencs).strftime('%d/%m/%Y') if g_vencs else 'N/A',
+        'volumetria':  g_vol,
+        'prazo_medio': round(sum(g_prazos)/len(g_prazos)) if g_prazos else 0,
+    }
+
 total_geral = sum(v['valor'] for v in results.values())
 total_desagio_geral = sum(v['desagio'] for v in results.values())
 total_boletos = sum(v['volumetria'] for v in results.values())
